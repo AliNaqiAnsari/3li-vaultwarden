@@ -15,6 +15,13 @@ RUN npm ci
 WORKDIR /build/web-vault/apps/web
 RUN npm run dist:oss:selfhost
 
+# Copy additional Vaultwarden resources
+COPY web-vault/resources/src/favicon.ico /build/web-vault/apps/web/build/favicon.ico
+COPY web-vault/resources/src/images /build/web-vault/apps/web/build/images
+
+# Create vaultwarden.css (empty placeholder - Vaultwarden serves this)
+RUN mkdir -p /build/web-vault/apps/web/build/css && touch /build/web-vault/apps/web/build/css/vaultwarden.css
+
 # Stage 2: Use the official Vaultwarden testing image as base
 FROM vaultwarden/server:testing
 
