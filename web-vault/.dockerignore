@@ -1,0 +1,28 @@
+# Local build artifacts
+builds
+docker_builds
+container_builds
+web-vault
+
+# Documentation
+*.md
+*.txt
+
+# IDE files
+.vscode
+.idea
+*.iml
+
+# Environment files
+.env
+.build_env
+
+# Other
+.github
+Makefile
+
+# Release files
+*.tar.gz
+*.tar.gz.asc
+*.tar.gz.text
+sha256sums.txt

@@ -1,0 +1,69 @@
+diff --git a/apps/web/src/index.html b/apps/web/src/index.html
+index 5d98411f46..custom 100644
+--- a/apps/web/src/index.html
++++ b/apps/web/src/index.html
+@@ -14,6 +14,15 @@
+     <link rel="manifest" href="manifest.json" />
+     <!-- webpackIgnore: true -->
+     <link rel="stylesheet" href="css/vaultwarden.css" />
++    <!-- 3LI Custom SSO Configuration -->
++    <script>
++      // Configure default SSO identifier for auto-redirect
++      // This eliminates the need for users to enter the SSO identifier
++      window.VW_SSO_CONFIG = {
++        defaultIdentifier: '3li',
++        autoRedirect: true
++      };
++    </script>
+   </head>
+   <body class="layout_frontend">
+     <app-root>
+diff --git a/libs/auth/src/angular/sso/sso.component.ts b/libs/auth/src/angular/sso/sso.component.ts
+index original..custom 100644
+--- a/libs/auth/src/angular/sso/sso.component.ts
++++ b/libs/auth/src/angular/sso/sso.component.ts
+@@ -140,6 +140,23 @@ export class SsoComponent implements OnInit {
+    */
+   async ngOnInit() {
+     const qParams: QueryParams = await firstValueFrom(this.route.queryParams);
++
++    // 3LI Custom: Check for default SSO identifier configuration
++    // This allows auto-redirect to SSO without entering identifier
++    const vwSsoConfig = (window as any).VW_SSO_CONFIG;
++    if (vwSsoConfig?.autoRedirect && vwSsoConfig?.defaultIdentifier) {
++      // Only auto-redirect if we don't already have an identifier or code
++      if (qParams.identifier == null && qParams.code == null) {
++        this.identifierFormControl.setValue(vwSsoConfig.defaultIdentifier);
++        this.loggingIn = true;
++        try {
++          await this.submit();
++        } catch (e) {
++          this.loggingIn = false;
++        }
++        return;
++      }
++    }
+
+     // SSO on web uses a service to provide the email via state that's set on login,
+     // but because we have clients that delegate SSO to web we have to accept the email in the query params as well.
+diff --git a/libs/auth/src/angular/login/login.component.ts b/libs/auth/src/angular/login/login.component.ts
+index original..custom 100644
+--- a/libs/auth/src/angular/login/login.component.ts
++++ b/libs/auth/src/angular/login/login.component.ts
+@@ -127,6 +127,16 @@ export class LoginComponent implements OnInit, OnDestroy {
+   async ngOnInit(): Promise<void> {
+     // Add popstate listener to listen for browser back button clicks
+     window.addEventListener("popstate", this.handlePopState);
++
++    // 3LI Custom: Auto-redirect to SSO if configured
++    const vwSsoConfig = (window as any).VW_SSO_CONFIG;
++    if (vwSsoConfig?.autoRedirect && vwSsoConfig?.defaultIdentifier) {
++      // Redirect to SSO page which will auto-submit
++      await this.router.navigate(['/sso'], {
++        queryParams: { identifier: vwSsoConfig.defaultIdentifier }
++      });
++      return;
++    }
+
+     await this.defaultOnInit();
+

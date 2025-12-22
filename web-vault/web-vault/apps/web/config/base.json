@@ -1,0 +1,11 @@
+{
+  "urls": {},
+  "dev": {
+    "port": 8080,
+    "allowedHosts": "auto"
+  },
+  "flags": {
+    "sdk": true
+  },
+  "devFlags": {}
+}

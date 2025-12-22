@@ -1,0 +1,24 @@
+# Environment files with secrets
+.coolify.env
+
+# Node modules
+node_modules/
+
+# Build outputs
+web-vault/web-vault/apps/web/build/
+web-vault/container_builds/
+web-vault/docker_builds/
+web-vault/builds/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log

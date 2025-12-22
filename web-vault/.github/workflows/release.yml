@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+[a-z]?'
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    env:
+      # Force docker to output the progress in plain
+      BUILDKIT_PROGRESS: plain
+      # vars.DOCKERHUB_REPO needs to be '<user>/<repo>', for example 'vaultwarden/web-vault'
+      # Check for Docker hub credentials in secrets
+      HAVE_DOCKERHUB_LOGIN: ${{ vars.DOCKERHUB_REPO != '' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      # vars.GHCR_REPO needs to be 'ghcr.io/<user>/<repo>'
+      # Check for Github credentials in secrets
+      HAVE_GHCR_LOGIN: ${{ vars.GHCR_REPO != '' && github.repository_owner != '' && secrets.GITHUB_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      # Determine Docker Tag
+      - name: Init Variables
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "DOCKER_TAG=${GITHUB_REF#refs/*/}" | tee -a "${GITHUB_OUTPUT}"
+          elif [[ "${{ github.ref }}" == refs/heads/* ]]; then
+            echo "DOCKER_TAG=testing" | tee -a "${GITHUB_OUTPUT}"
+          fi
+
+      # Login to Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: ${{ env.HAVE_DOCKERHUB_LOGIN == 'true' }}
+
+      - name: Tags for DockerHub
+        if: ${{ env.HAVE_DOCKERHUB_LOGIN == 'true' }}
+        shell: bash
+        run: |
+          echo "tags=${tags:+${tags},}${{ vars.DOCKERHUB_REPO }}:${{ steps.vars.outputs.DOCKER_TAG }}" \
+            | tee -a "${GITHUB_ENV}"
+
+      # Login to GitHub Container Registry
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ env.HAVE_GHCR_LOGIN == 'true' }}
+
+      - name: Tags for ghcr.io
+        if: ${{ env.HAVE_GHCR_LOGIN == 'true' }}
+        shell: bash
+        run: |
+          echo "tags=${tags:+${tags},}${{ vars.GHCR_REPO }}:${{ steps.vars.outputs.DOCKER_TAG }}" \
+            | tee -a "${GITHUB_ENV}"
+
+      - name: Build and push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ env.tags }}

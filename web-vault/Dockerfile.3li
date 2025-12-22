@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# Custom build for 3LI with SSO auto-redirect
+
+FROM node:22-trixie AS build
+RUN node --version && npm --version
+
+ENV VAULT_FOLDER=web-vault
+
+RUN mkdir /bw_web_builds
+WORKDIR /bw_web_builds
+
+# Copy the pre-modified web vault source
+COPY web-vault ./web-vault
+
+# Copy build scripts
+COPY scripts ./scripts
+COPY .build_env* ./
+
+# Build the web vault
+RUN ./scripts/build_web_vault.sh
+RUN mv "${VAULT_FOLDER}/apps/web/build" ./web-vault-dist
+
+RUN tar -czvf "bw_web_vault.tar.gz" web-vault-dist --owner=0 --group=0
+RUN echo "sha256sum: $(sha256sum bw_web_vault.tar.gz)"
+
+FROM scratch
+COPY --from=build /bw_web_builds/bw_web_vault.tar.gz /bw_web_vault.tar.gz
+COPY --from=build /bw_web_builds/web-vault-dist /web-vault
+
+CMD [""]

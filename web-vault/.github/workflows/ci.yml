@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ci.yml"
+      - "patches/v20*.patch"
+      - "resources/**"
+      - "scripts/**"
+      - "Dockerfile"
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    env:
+      # Force docker to output the progress in plain
+      BUILDKIT_PROGRESS: plain
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Build and Extract
+        shell: bash
+        run: |
+          make docker-extract
+
+      - name: Generate checksum
+        shell: bash
+        run: |
+          echo "sha256sum: $(sha256sum container_builds/bw_web_vault.tar.gz)"
+
+      - name: "Upload web-vault artifact"
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: web-vault
+          compression-level: 0
+          path: container_builds/bw_web_vault.tar.gz
