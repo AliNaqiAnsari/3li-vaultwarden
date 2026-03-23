@@ -37,8 +37,8 @@ RUN mkdir -p web-vault-dist/css && touch web-vault-dist/css/vaultwarden.css
 # Create vw-version.json for version tracking
 RUN printf '{"version":"3li-custom"}' > web-vault-dist/vw-version.json
 
-# Stage 2: Use the official Vaultwarden testing image as base
-FROM vaultwarden/server:testing
+# Stage 2: Use the official Vaultwarden stable image as base
+FROM vaultwarden/server:1.35.4
 
 # Copy the custom web vault into the Vaultwarden image
 # The official Vaultwarden expects web vault at /web-vault
